@@ -233,9 +233,9 @@ def predict_stage(confidence_scores, cancer_type, features):
     
     return stage, cure_probability, risk
 
-# Load Trained Model from Hugging Face Hub (PUBLIC REPO - NO TOKEN NEEDED)
+# Load Trained Model from Hugging Face Hub - CORRECTED REPO NAME
 def load_trained_model():
-    """Load trained model from Hugging Face Hub (Public Repository)"""
+    """Load trained model from Hugging Face Hub"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     
@@ -244,13 +244,12 @@ def load_trained_model():
 
     try:
         print("⏳ Downloading model from Hugging Face Hub...")
-        print("📍 Repository: yenugu/lung-cancer-model (Public)")
+        print("📍 Repository: yenugu/lung_cancer_model")  # CORRECTED: underscore not hyphen
         print("📁 File: lung_cancer_model.pth")
         
-        # Download model from Hugging Face Hub
-        # NO TOKEN NEEDED because repo is PUBLIC
+        # Download model from Hugging Face Hub - CORRECTED REPO NAME
         model_path = hf_hub_download(
-            repo_id="yenugu/lung-cancer-model",
+            repo_id="yenugu/lung_cancer_model",  # CORRECTED: Use underscore
             filename="lung_cancer_model.pth"
         )
 
@@ -275,10 +274,9 @@ def load_trained_model():
     except Exception as e:
         print(f"❌ Failed to load model from Hugging Face Hub: {e}")
         print("\n💡 Troubleshooting Tips:")
-        print("1. Make sure the repository is PUBLIC: https://huggingface.co/yenugu/lung-cancer-model")
-        print("2. Verify the file exists: lung_cancer_model.pth")
-        print("3. Check repository name spelling")
-        print("4. Make sure you've uploaded the model file")
+        print("1. Repository: https://huggingface.co/yenugu/lung_cancer_model")
+        print("2. File should be: lung_cancer_model.pth")
+        print("3. Make sure the repository is PUBLIC")
         return None, None
 
 # Enhanced Prediction Function
@@ -370,7 +368,7 @@ def create_interface():
     
     def process_image(input_image):
         if input_image is None:
-            return [None] * 5 + [  # 5 images
+            return [None] * 5 + [
                 "**Prediction:** Please upload a CT scan image",
                 "**Confidence:** N/A",
                 "**Reliability:** N/A",
@@ -588,7 +586,7 @@ def create_interface():
 if __name__ == "__main__":
     print("🚀 Launching Lung Cancer Detection System for Hugging Face...")
     print("📊 Model Accuracy: 96.82%")
-    print("💡 Model will be downloaded from PUBLIC repo: yenugu/lung-cancer-model")
+    print("💡 Model will be downloaded from: yenugu/lung_cancer_model")
     
     interface = create_interface()
     if interface:
