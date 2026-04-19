@@ -8,7 +8,7 @@ import os
 import gradio as gr
 import json
 from datetime import datetime
-from huggingface_hub import hf_hub_download  # IMPORTANT: Add this for HF Hub download
+from huggingface_hub import hf_hub_download
 
 # Fix numpy compatibility
 np.float = float
@@ -233,9 +233,9 @@ def predict_stage(confidence_scores, cancer_type, features):
     
     return stage, cure_probability, risk
 
-# Load Trained Model from Hugging Face Hub
+# Load Trained Model from Hugging Face Hub (PUBLIC REPO - NO TOKEN NEEDED)
 def load_trained_model():
-    """Load trained model from Hugging Face Hub"""
+    """Load trained model from Hugging Face Hub (Public Repository)"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     
@@ -244,12 +244,13 @@ def load_trained_model():
 
     try:
         print("⏳ Downloading model from Hugging Face Hub...")
-        print("📍 Repository: yenugu/lung-cancer-model")
+        print("📍 Repository: yenugu/lung-cancer-model (Public)")
         print("📁 File: lung_cancer_model.pth")
         
         # Download model from Hugging Face Hub
+        # NO TOKEN NEEDED because repo is PUBLIC
         model_path = hf_hub_download(
-            repo_id="yenugu/lung-cancer-model",  # Your model repo
+            repo_id="yenugu/lung-cancer-model",
             filename="lung_cancer_model.pth"
         )
 
@@ -274,10 +275,10 @@ def load_trained_model():
     except Exception as e:
         print(f"❌ Failed to load model from Hugging Face Hub: {e}")
         print("\n💡 Troubleshooting Tips:")
-        print("1. Make sure you've created the repository: yenugu/lung-cancer-model")
-        print("2. Upload your model file: lung_cancer_model.pth")
-        print("3. Check if the repository is public")
-        print("4. Verify the filename matches exactly")
+        print("1. Make sure the repository is PUBLIC: https://huggingface.co/yenugu/lung-cancer-model")
+        print("2. Verify the file exists: lung_cancer_model.pth")
+        print("3. Check repository name spelling")
+        print("4. Make sure you've uploaded the model file")
         return None, None
 
 # Enhanced Prediction Function
@@ -587,7 +588,7 @@ def create_interface():
 if __name__ == "__main__":
     print("🚀 Launching Lung Cancer Detection System for Hugging Face...")
     print("📊 Model Accuracy: 96.82%")
-    print("💡 Model will be downloaded from: yenugu/lung-cancer-model")
+    print("💡 Model will be downloaded from PUBLIC repo: yenugu/lung-cancer-model")
     
     interface = create_interface()
     if interface:
