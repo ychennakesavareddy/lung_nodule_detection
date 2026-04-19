@@ -1,4 +1,4 @@
-# app.py - Complete Working Version for Hugging Face Spaces
+# app.py - Working Version with Fallback Model
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
@@ -8,10 +8,10 @@ import os
 import gradio as gr
 from datetime import datetime
 import cv2
-from huggingface_hub import hf_hub_download
 import traceback
+import sys
 
-# Fix numpy compatibility issues
+# Fix numpy compatibility
 np.float = float
 
 # Configuration
@@ -22,7 +22,7 @@ class Config:
 
 config = Config()
 
-# CNN Model Architecture (Must match your trained model)
+# CNN Model Architecture
 class LungCancerModel(nn.Module):
     def __init__(self, num_classes=3):
         super(LungCancerModel, self).__init__()
@@ -46,6 +46,20 @@ class LungCancerModel(nn.Module):
         x = self.classifier(x)
         return x
 
+# Create a dummy model for testing
+def create_dummy_model(device):
+    """Create a dummy model for testing when real model isn't available"""
+    print("⚠️ Creating dummy model for testing...")
+    model = LungCancerModel(num_classes=config.NUM_CLASSES)
+    
+    # Initialize with random weights
+    for param in model.parameters():
+        param.data.normal_(0, 0.02)
+    
+    model.to(device)
+    model.eval()
+    return model
+
 # Image preprocessing
 def preprocess_image(image):
     """Preprocess image for model input"""
@@ -57,6 +71,8 @@ def preprocess_image(image):
     
     if isinstance(image, np.ndarray):
         image = Image.fromarray(image)
+    elif isinstance(image, str):
+        image = Image.open(image)
     
     return transform(image).unsqueeze(0)
 
@@ -158,7 +174,7 @@ def extract_features(image):
         
         # Calculate features
         hist = cv2.calcHist([image], [0], None, [256], [0, 256])
-        hist = hist / hist.sum()
+        hist = hist / (hist.sum() + 1e-10)
         entropy = -np.sum(hist * np.log2(hist + 1e-10))
         contrast = np.std(image)
         energy = np.sum(hist ** 2)
@@ -174,100 +190,105 @@ def extract_features(image):
         print(f"Feature extraction error: {e}")
         return {'entropy': 0, 'contrast': 0, 'energy': 0, 'mean_intensity': 0}
 
-# Stage prediction
-def predict_stage(confidence_scores, cancer_type):
-    """Predict cancer stage"""
-    if cancer_type == "Normal":
-        return "No cancer detected", "N/A", "Low"
-    
-    malignant_confidence = confidence_scores[2] if len(confidence_scores) > 2 else 0
-    
-    if cancer_type == "Benign":
-        return "Benign Tumor", "High (95%)", "Low"
-    
-    # Malignant staging
-    if malignant_confidence < 0.3:
-        stage = "Stage I"
-        cure = "High (85%)"
-        risk = "Low"
-    elif malignant_confidence < 0.6:
-        stage = "Stage II"
-        cure = "Medium (60%)"
-        risk = "Medium"
-    elif malignant_confidence < 0.8:
-        stage = "Stage III"
-        cure = "Low (30%)"
-        risk = "High"
-    else:
-        stage = "Stage IV"
-        cure = "Very Low (10%)"
-        risk = "Critical"
-    
-    return stage, cure, risk
+# Simulate prediction with dummy model
+def simulate_prediction(image):
+    """Simulate prediction when using dummy model"""
+    # Simple rule-based simulation based on image properties
+    try:
+        if isinstance(image, Image.Image):
+            img_array = np.array(image)
+        else:
+            img_array = image
+        
+        # Calculate simple metrics
+        brightness = np.mean(img_array)
+        contrast = np.std(img_array)
+        
+        # Simple logic for demonstration
+        if contrast < 30:
+            prediction = "Normal"
+            confidence = 0.75 + (brightness / 500)
+        elif contrast < 60:
+            prediction = "Benign"
+            confidence = 0.85
+        else:
+            prediction = "Malignant"
+            confidence = 0.90
+        
+        confidence = min(confidence, 0.98)
+        
+        return prediction, confidence
+    except:
+        return "Normal", 0.50
 
-# Load model from Hugging Face
-def load_model():
-    """Load the trained model from Hugging Face Hub"""
-    print("=" * 50)
-    print("Loading Lung Cancer Detection Model...")
+# Load or create model
+def load_or_create_model():
+    """Try to load real model, otherwise create dummy"""
+    print("\n" + "=" * 50)
+    print("Initializing Model...")
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Device: {device}")
     
-    model = LungCancerModel(num_classes=config.NUM_CLASSES)
+    model = None
+    model_source = None
     
-    # Try multiple repository names
-    repos_to_try = [
-        "yenugu/lung_cancer_model",
-        "yenugu/lung-cancer-model"
-    ]
+    # Try to import huggingface hub
+    try:
+        from huggingface_hub import hf_hub_download
+        
+        # Try multiple repository names
+        repos_to_try = [
+            "yenugu/lung_cancer_model",
+            "yenugu/lung-cancer-model"
+        ]
+        
+        for repo_id in repos_to_try:
+            try:
+                print(f"\nTrying: {repo_id}")
+                model_path = hf_hub_download(
+                    repo_id=repo_id,
+                    filename="lung_cancer_model.pth",
+                    resume=True
+                )
+                
+                print(f"Downloaded: {model_path}")
+                
+                # Load model
+                temp_model = LungCancerModel(num_classes=config.NUM_CLASSES)
+                checkpoint = torch.load(model_path, map_location=device)
+                
+                if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+                    temp_model.load_state_dict(checkpoint['model_state_dict'])
+                else:
+                    temp_model.load_state_dict(checkpoint)
+                
+                model = temp_model
+                model_source = f"✅ Real model loaded from {repo_id}"
+                break
+                
+            except Exception as e:
+                print(f"Failed: {str(e)[:100]}")
+                continue
+                
+    except ImportError:
+        print("huggingface_hub not available")
+    except Exception as e:
+        print(f"Error loading from hub: {e}")
     
-    for repo_id in repos_to_try:
-        try:
-            print(f"\nTrying to download from: {repo_id}")
-            
-            # Download model file
-            model_path = hf_hub_download(
-                repo_id=repo_id,
-                filename="lung_cancer_model.pth"
-            )
-            
-            print(f"Downloaded to: {model_path}")
-            
-            # Load checkpoint
-            checkpoint = torch.load(model_path, map_location=device)
-            
-            # Handle different checkpoint formats
-            if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-                model.load_state_dict(checkpoint['model_state_dict'])
-                accuracy = checkpoint.get('val_accuracy', 96.82)
-                print(f"✅ Model loaded! Accuracy: {accuracy:.2f}%")
-            else:
-                model.load_state_dict(checkpoint)
-                print("✅ Model loaded! Accuracy: 96.82%")
-            
-            model.to(device)
-            model.eval()
-            print(f"✅ Success! Model loaded from {repo_id}")
-            return model, device
-            
-        except Exception as e:
-            print(f"❌ Failed from {repo_id}: {str(e)}")
-            continue
+    # If no model loaded, create dummy
+    if model is None:
+        model = create_dummy_model(device)
+        model_source = "⚠️ Using demonstration model (real model not found)"
     
-    print("\n❌ Could not load model from any repository")
-    print("💡 Using fallback dummy model for testing...")
-    
-    # Fallback: Create a dummy model
-    for param in model.parameters():
-        param.data.normal_(0, 0.02)
     model.to(device)
     model.eval()
     
-    return model, device
+    print(f"\n{model_source}")
+    return model, device, model_source
 
 # Prediction function
-def predict_lung_cancer(image, model, device):
+def predict_lung_cancer(image, model, device, use_dummy):
     """Main prediction function"""
     if image is None:
         return {
@@ -282,17 +303,19 @@ def predict_lung_cancer(image, model, device):
         }
     
     try:
-        # Preprocess
-        input_tensor = preprocess_image(image).to(device)
-        
-        # Predict
-        with torch.no_grad():
-            outputs = model(input_tensor)
-            probabilities = torch.nn.functional.softmax(outputs, dim=1)
-            confidence, predicted = torch.max(probabilities, 1)
-        
-        predicted_class = config.CLASS_NAMES[predicted.item()]
-        confidence_score = confidence.item()
+        # Get prediction
+        if use_dummy:
+            predicted_class, confidence_score = simulate_prediction(image)
+        else:
+            # Real model prediction
+            input_tensor = preprocess_image(image).to(device)
+            with torch.no_grad():
+                outputs = model(input_tensor)
+                probabilities = torch.nn.functional.softmax(outputs, dim=1)
+                confidence, predicted = torch.max(probabilities, 1)
+            
+            predicted_class = config.CLASS_NAMES[predicted.item()]
+            confidence_score = confidence.item()
         
         # Generate visualizations
         heatmap = generate_heatmap(image, model, device)
@@ -304,10 +327,31 @@ def predict_lung_cancer(image, model, device):
         features = extract_features(image)
         
         # Predict stage
-        stage, cure_prob, risk_level = predict_stage(
-            probabilities.cpu().numpy()[0], 
-            predicted_class
-        )
+        if predicted_class == "Normal":
+            stage = "No cancer detected"
+            cure_prob = "N/A"
+            risk_level = "Low"
+        elif predicted_class == "Benign":
+            stage = "Benign Tumor"
+            cure_prob = "High (95%)"
+            risk_level = "Low"
+        else:
+            if confidence_score < 0.3:
+                stage = "Stage I"
+                cure_prob = "High (85%)"
+                risk_level = "Low"
+            elif confidence_score < 0.6:
+                stage = "Stage II"
+                cure_prob = "Medium (60%)"
+                risk_level = "Medium"
+            elif confidence_score < 0.8:
+                stage = "Stage III"
+                cure_prob = "Low (30%)"
+                risk_level = "High"
+            else:
+                stage = "Stage IV"
+                cure_prob = "Very Low (10%)"
+                risk_level = "Critical"
         
         return {
             'prediction': predicted_class,
@@ -348,23 +392,26 @@ def predict_lung_cancer(image, model, device):
 def create_interface():
     """Create the Gradio web interface"""
     
-    # Load model
-    model, device = load_model()
+    # Load or create model
+    model, device, model_status = load_or_create_model()
+    use_dummy = "demonstration" in model_status.lower()
+    
+    # Show status in interface
+    status_color = "🟢" if not use_dummy else "🟡"
     
     def process_image(image):
         """Process image and return results"""
-        result = predict_lung_cancer(image, model, device)
+        result = predict_lung_cancer(image, model, device, use_dummy)
         
         # Format prediction text with emoji
         if result['prediction'] == 'Normal':
             emoji = "✅"
-            color = "green"
         elif result['prediction'] == 'Benign':
             emoji = "⚠️"
-            color = "orange"
-        else:
+        elif result['prediction'] == 'Malignant':
             emoji = "🚨"
-            color = "red"
+        else:
+            emoji = "❓"
         
         prediction_text = f"{emoji} **Prediction:** {result['prediction']}"
         confidence_text = f"**Confidence:** {result['confidence']:.2%}"
@@ -374,13 +421,16 @@ def create_interface():
         
         # Feature text
         features = result['features']
-        feature_text = f"""
-        **Features Analysis:**
-        - Entropy: {features.get('entropy', 0):.3f}
-        - Contrast: {features.get('contrast', 0):.3f}
-        - Energy: {features.get('energy', 0):.3f}
-        - Mean Intensity: {features.get('mean_intensity', 0):.1f}
-        """
+        if features:
+            feature_text = f"""
+            **📊 Feature Analysis:**
+            - **Entropy:** {features.get('entropy', 0):.3f} (measures randomness)
+            - **Contrast:** {features.get('contrast', 0):.3f} (image sharpness)
+            - **Energy:** {features.get('energy', 0):.3f} (texture uniformity)
+            - **Mean Intensity:** {features.get('mean_intensity', 0):.1f} (brightness)
+            """
+        else:
+            feature_text = "Feature extraction not available"
         
         return (
             result['processed']['original'],
@@ -406,14 +456,27 @@ def create_interface():
             max-width: 1400px !important;
             margin: auto !important;
         }
-        .result-box {
+        .status-box {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             color: white;
+            margin-bottom: 20px;
         }
         """
     ) as demo:
+        
+        # Status banner
+        with gr.Row():
+            with gr.Column():
+                status_html = f"""
+                <div class="status-box">
+                    <h3>{status_color} System Status</h3>
+                    <p>{model_status}</p>
+                    <small>If using demonstration model, results are simulated for testing.</small>
+                </div>
+                """
+                gr.HTML(status_html)
         
         gr.Markdown("""
         # 🫁 Lung Cancer Detection System
@@ -437,7 +500,7 @@ def create_interface():
             
             with gr.Column(scale=1):
                 gr.Markdown("## 📊 Results")
-                with gr.Group(elem_classes="result-box"):
+                with gr.Group():
                     prediction_out = gr.Markdown("**Prediction:** Ready")
                     confidence_out = gr.Markdown("**Confidence:** -")
                     stage_out = gr.Markdown("**Stage:** -")
@@ -474,7 +537,7 @@ def create_interface():
             gr.Markdown("""
             ### Model Details
             - **Architecture:** ResNet50 with custom classifier
-            - **Training Accuracy:** 96.82%
+            - **Target Accuracy:** 96.82%
             - **Classes:** Normal, Benign, Malignant
             - **Input Size:** 224x224 pixels
             
@@ -484,6 +547,11 @@ def create_interface():
             3. View classification results and confidence score
             4. Check heatmap for potential nodule locations
             5. Review risk assessment and recommendations
+            
+            ### Important Note
+            - The system is currently running in demonstration mode
+            - To use the actual trained model, upload your .pth file to the Space
+            - Results are for educational purposes only
             
             ### Disclaimer
             This is a demonstration tool for educational purposes. 
@@ -525,5 +593,6 @@ if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
         server_port=7860,
-        share=False
+        share=False,
+        debug=False
     )
