@@ -8,6 +8,7 @@ import os
 import gradio as gr
 import json
 from datetime import datetime
+from huggingface_hub import hf_hub_download  # IMPORTANT: Add this for HF Hub download
 
 # Fix numpy compatibility
 np.float = float
@@ -232,35 +233,52 @@ def predict_stage(confidence_scores, cancer_type, features):
     
     return stage, cure_probability, risk
 
-# Load Trained Model
+# Load Trained Model from Hugging Face Hub
 def load_trained_model():
-    """Load your trained model with 96.82% accuracy"""
+    """Load trained model from Hugging Face Hub"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     
     # Use the same model architecture that was trained
     model = LungCancerModel(num_classes=config.NUM_CLASSES)
-    
-    if os.path.exists(config.MODEL_SAVE_PATH):
-        try:
-            checkpoint = torch.load(config.MODEL_SAVE_PATH, map_location=device)
-            if 'model_state_dict' in checkpoint:
-                model.load_state_dict(checkpoint['model_state_dict'])
-                val_accuracy = checkpoint.get('val_accuracy', 96.82)
-                print(f"✅ Model loaded successfully! (Accuracy: {val_accuracy:.2f}%)")
-            else:
-                model.load_state_dict(checkpoint)
-                print("✅ Model loaded successfully! (Accuracy: 96.82%)")
-        except Exception as e:
-            print(f"❌ Error loading model: {e}")
-            return None, None
-    else:
-        print("❌ No trained model found")
+
+    try:
+        print("⏳ Downloading model from Hugging Face Hub...")
+        print("📍 Repository: yenugu/lung-cancer-model")
+        print("📁 File: lung_cancer_model.pth")
+        
+        # Download model from Hugging Face Hub
+        model_path = hf_hub_download(
+            repo_id="yenugu/lung-cancer-model",  # Your model repo
+            filename="lung_cancer_model.pth"
+        )
+
+        print(f"✅ Model downloaded to: {model_path}")
+        
+        # Load the checkpoint
+        checkpoint = torch.load(model_path, map_location=device)
+
+        # Handle both checkpoint formats
+        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+            model.load_state_dict(checkpoint['model_state_dict'])
+            val_accuracy = checkpoint.get('val_accuracy', 96.82)
+            print(f"✅ Model loaded successfully! (Accuracy: {val_accuracy:.2f}%)")
+        else:
+            model.load_state_dict(checkpoint)
+            print("✅ Model loaded successfully! (Accuracy: 96.82%)")
+
+        model.to(device)
+        model.eval()
+        return model, device
+
+    except Exception as e:
+        print(f"❌ Failed to load model from Hugging Face Hub: {e}")
+        print("\n💡 Troubleshooting Tips:")
+        print("1. Make sure you've created the repository: yenugu/lung-cancer-model")
+        print("2. Upload your model file: lung_cancer_model.pth")
+        print("3. Check if the repository is public")
+        print("4. Verify the filename matches exactly")
         return None, None
-    
-    model.to(device)
-    model.eval()
-    return model, device
 
 # Enhanced Prediction Function
 def predict_lung_cancer(image, model, device):
@@ -569,6 +587,7 @@ def create_interface():
 if __name__ == "__main__":
     print("🚀 Launching Lung Cancer Detection System for Hugging Face...")
     print("📊 Model Accuracy: 96.82%")
+    print("💡 Model will be downloaded from: yenugu/lung-cancer-model")
     
     interface = create_interface()
     if interface:
