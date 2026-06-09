@@ -1,94 +1,138 @@
 # 🫁 Lung Cancer Detection & Classification System
 
+<p align="center">
+  <img src="assets/banner.png" width="900">
+</p>
+
+<p align="center">
+
 [![IEEE Paper](https://img.shields.io/badge/IEEE-Paper-0066CC)](https://ieeexplore.ieee.org/document/11539587)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-1.9+-EE4C2C)](https://pytorch.org/)
 [![Gradio](https://img.shields.io/badge/Gradio-3.0+-FF6600)](https://gradio.app/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Hugging Face](https://img.shields.io/badge/HuggingFace-Model-yellow)](https://huggingface.co/yenugu)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+</p>
+
+---
+
+## 📖 Table of Contents
+
+- Overview
+- Features
+- Model Architecture
+- Dataset
+- Installation
+- Requirements
+- Usage
+- Gradio Interface
+- Image Processing Pipeline
+- Explainable AI (Grad-CAM)
+- Training Configuration
+- Results
+- Project Structure
+- Model Download
+- Research Paper
+- Citation
+- License
+- Contact
 
 ---
 
 # 📋 Overview
 
-This project implements a **Deep Learning-based Lung Cancer Detection and Classification System** using a **ResNet-50** architecture with transfer learning. The model analyzes CT scan images and classifies lung nodules into three categories:
+Lung cancer remains one of the leading causes of cancer-related deaths worldwide. Early identification of malignant pulmonary nodules can significantly improve patient outcomes.
+
+This project presents a Deep Learning-based Lung Cancer Detection and Classification System built using a transfer-learning approach based on ResNet-50. The system analyzes CT scan images and classifies lung nodules into:
 
 - ✅ Normal
 - ⚠️ Benign
 - 🔴 Malignant
 
-The system also provides:
+In addition, the platform provides:
 
-- Explainable AI using **Grad-CAM**
-- Image enhancement and preprocessing pipeline
-- Feature extraction metrics
-- Interactive **Gradio Web Interface**
-- Cancer stage estimation and diagnostic summary
-
-> **Research Paper:**  
-> *Deep Learning-Based Lung Nodule Classification with Explainable Feature Analysis*  
-> **Author:** Yenugu Chenna Kesava Reddy  
-> **Conference:** ICICICT 2026
+- Explainable AI through Grad-CAM
+- Automated image enhancement
+- Feature extraction analysis
+- Interactive Gradio web interface
+- Diagnostic report generation
 
 ---
 
-# 🎯 Key Features
+# ⚠️ Medical Disclaimer
 
-- 🧠 ResNet-50 Transfer Learning Model
-- 📊 High Validation Accuracy (96.82%)
+This project is intended for:
+
+- Research
+- Educational purposes
+- AI experimentation
+
+It is NOT a medical device and must NOT be used for clinical diagnosis, treatment decisions, or patient care.
+
+Always consult qualified medical professionals for healthcare decisions.
+
+---
+
+# 🎯 Features
+
+- 🧠 ResNet-50 Transfer Learning
 - 🔥 Grad-CAM Explainability
-- 🖼️ CT Scan Image Analysis
-- 📈 Feature Extraction (Entropy, Contrast, Energy)
-- 🩺 Cancer Stage Prediction
-- 🌐 Gradio-based Web Interface
-- ⚡ Fast Inference Pipeline
+- 🖼️ CT Scan Analysis
+- 📊 Feature Extraction Metrics
+- 🌐 Gradio Interface
+- ⚡ Fast Inference
+- 📈 Performance Visualization
+- 📄 Diagnostic Summary Generation
 
 ---
 
 # 🧠 Model Architecture
 
 ```text
-Input Image (224x224x3)
+Input CT Scan (224×224×3)
         │
         ▼
 ResNet-50 Backbone
-(Pre-trained on ImageNet)
+(ImageNet Pretrained)
         │
         ▼
 Feature Extraction
 (2048 Features)
         │
         ▼
-AdaptiveAvgPool2D
+Adaptive Average Pooling
         │
         ▼
 Dropout (0.5)
         │
         ▼
-Linear (2048 → 512)
+Linear Layer (2048 → 512)
         │
         ▼
-ReLU
+ReLU Activation
         │
         ▼
 Dropout (0.3)
         │
         ▼
-Linear (512 → 3)
+Linear Layer (512 → 3)
         │
         ▼
-Output:
+Softmax Output
+
 Normal | Benign | Malignant
 ```
 
-## Model Specifications
+## Specifications
 
-| Component | Specification |
-|------------|--------------|
-| Base Model | ResNet-50 |
+| Property | Value |
+|-----------|--------|
 | Framework | PyTorch |
+| Backbone | ResNet-50 |
 | Input Size | 224 × 224 |
 | Classes | 3 |
-| Parameters | ~25 Million |
+| Parameters | ~25M |
 | Transfer Learning | Yes |
 | Explainability | Grad-CAM |
 
@@ -96,9 +140,21 @@ Normal | Benign | Malignant
 
 # 📊 Dataset
 
-The model is trained on the **IQ-OTHNCCD Lung Cancer Dataset**.
+Dataset Used:
 
-### Dataset Categories
+**IQ-OTHNCCD Lung Cancer Dataset**
+
+Directory Structure:
+
+```text
+datasets/
+└── IQ-OTHNCCD/
+    ├── Normal cases/
+    ├── Benign cases/
+    └── Malignant cases/
+```
+
+Class Distribution:
 
 | Class | Samples |
 |---------|---------|
@@ -106,34 +162,9 @@ The model is trained on the **IQ-OTHNCCD Lung Cancer Dataset**.
 | Benign | 150+ |
 | Malignant | 200+ |
 
-### Dataset Structure
-
-```text
-datasets/
-└── IQ-OTHNCCD/
-    ├── Normal cases/
-    │   ├── Normal-1.jpg
-    │   ├── Normal-2.jpg
-    │   └── ...
-    │
-    ├── Bengin cases/
-    │   ├── Benign-1.jpg
-    │   └── ...
-    │
-    └── Malignant cases/
-        ├── Malignant-1.jpg
-        └── ...
-```
-
 ---
 
 # 🚀 Installation
-
-## Prerequisites
-
-- Python 3.8+
-- CUDA-capable GPU (Recommended)
-- 8GB+ RAM
 
 ## Clone Repository
 
@@ -145,15 +176,14 @@ cd lung_nodule_detection
 
 ## Create Virtual Environment
 
-### Windows
+Windows:
 
 ```bash
 python -m venv venv
-
 venv\Scripts\activate
 ```
 
-### Linux / Mac
+Linux / macOS:
 
 ```bash
 python -m venv venv
@@ -186,7 +216,7 @@ gradio>=3.0.0
 
 # 💻 Usage
 
-## Run Web Application
+Run Application
 
 ```bash
 python app.py
@@ -200,101 +230,36 @@ http://localhost:7860
 
 ---
 
-## Train Model
-
-```bash
-python train.py --train
-```
-
----
-
-## Command Line Inference
-
-```python
-from app import predict_lung_cancer, load_model
-from PIL import Image
-
-model, device = load_model()
-
-image = Image.open("sample.jpg")
-
-result = predict_lung_cancer(
-    image,
-    model,
-    device
-)
-
-print("Prediction:", result["prediction"])
-print("Confidence:", result["confidence"])
-print("Stage:", result["stage"])
-```
-
----
-
-# 📱 Gradio Interface
-
-## Input Panel
-
-- CT Scan Upload
-- Process Button
-- Clear Button
-- Exit Button
-
-## Output Panel
-
-- Classification Result
-- Confidence Score
-- Cancer Stage
-- Cure Probability
-- Feature Analysis
-
-## Visualization Tabs
-
-### Image Processing
-
-- Original Image
-- Histogram Equalization
-- OTSU Segmentation
-- Median Filtering
-- Morphological Dilation
-
-### Nodule Detection
-
-- Grad-CAM Heatmap
-- Diagnostic Summary
-
----
-
 # 🔬 Image Processing Pipeline
 
-| Step | Technique | Purpose |
-|--------|----------|----------|
-| 1 | Resize (224×224) | Standardize Input |
-| 2 | Histogram Equalization | Enhance Contrast |
-| 3 | OTSU Thresholding | Lung Segmentation |
-| 4 | Median Filtering | Noise Removal |
-| 5 | Morphological Dilation | Feature Enhancement |
+| Step | Method |
+|--------|----------|
+| Resize | 224×224 |
+| Contrast Enhancement | Histogram Equalization |
+| Segmentation | OTSU Thresholding |
+| Denoising | Median Filter |
+| Enhancement | Morphological Dilation |
 
 ---
 
-# 🎨 Grad-CAM Visualization
+# 🔥 Explainable AI
 
-The system provides explainable predictions using **Grad-CAM**.
+Grad-CAM is used to visualize regions contributing to model predictions.
 
-### Color Interpretation
+### Heatmap Interpretation
 
-🔴 Red Regions → High Influence
+🔴 Red → Strong Contribution
 
-🟡 Yellow Regions → Medium Influence
+🟡 Yellow → Moderate Contribution
 
-🔵 Blue Regions → Low Influence
+🔵 Blue → Low Contribution
 
-### Overlay Formula
+Visualization Formula:
 
 ```text
 60% Original Image
 +
-40% Heatmap
+40% Grad-CAM Heatmap
 =
 Final Visualization
 ```
@@ -310,8 +275,6 @@ EPOCHS = 50
 
 LEARNING_RATE = 0.001
 
-NUM_CLASSES = 3
-
 OPTIMIZER = Adam
 
 SCHEDULER = StepLR(
@@ -322,33 +285,22 @@ SCHEDULER = StepLR(
 
 ---
 
-# 📊 Performance Metrics
+# 📊 Results
 
-| Class | Precision | Recall | F1 Score |
-|---------|----------|--------|----------|
+| Metric | Value |
+|----------|--------|
+| Accuracy | 96.82% |
+| Precision | 96% |
+| Recall | 95% |
+| F1 Score | 95% |
+
+Per-Class Results:
+
+| Class | Precision | Recall | F1 |
+|---------|---------|---------|---------|
 | Normal | 0.96 | 0.95 | 0.95 |
 | Benign | 0.94 | 0.93 | 0.93 |
 | Malignant | 0.97 | 0.98 | 0.97 |
-| Average | 0.96 | 0.95 | 0.95 |
-
-### Overall Results
-
-- Accuracy: **96.82%**
-- Train Split: **80%**
-- Validation Split: **20%**
-
----
-
-# 🩺 Cancer Stage Estimation
-
-> **Note:** This stage estimation is for educational/research purposes and should not be used for clinical diagnosis.
-
-| Confidence Range | Stage | Estimated Cure Probability |
-|------------------|--------|----------------------------|
-| < 30% | Stage I | 85% |
-| 30% – 60% | Stage II | 60% |
-| 60% – 80% | Stage III | 30% |
-| > 80% | Stage IV | 10% |
 
 ---
 
@@ -367,29 +319,65 @@ lung_nodule_detection/
 │
 ├── datasets/
 │   └── IQ-OTHNCCD/
-│       ├── Normal cases/
-│       ├── Bengin cases/
-│       └── Malignant cases/
 │
 ├── evaluation_results/
+│
+├── assets/
+│   ├── banner.png
+│   └── demo.gif
 │
 └── external_validation.py
 ```
 
 ---
 
-# 📝 Citation
+# 📥 Download Pre-trained Model
 
-If you use this project in your research, please cite:
+### Hugging Face Repository
+
+https://huggingface.co/yenugu/lung_cancer_model
+
+Download:
+
+```bash
+wget https://huggingface.co/yenugu/lung_cancer_model/resolve/main/lung_cancer_model.pth
+```
+
+Place Model:
+
+```text
+models/
+└── lung_cancer_model.pth
+```
+
+---
+
+# 📄 Research Paper
+
+Title:
+
+**Deep Learning-Based Lung Nodule Classification with Explainable Feature Analysis**
+
+Conference:
+
+**ICICICT 2026**
+
+IEEE Paper:
+
+https://ieeexplore.ieee.org/document/11539587
+
+---
+
+# 📝 Citation
 
 ```bibtex
 @INPROCEEDINGS{11539587,
-  author={Yenugu, Chenna Kesava Reddy},
-  booktitle={2026 International Conference on Intelligent Computing, IoT, and Communication Technologies (ICICICT)},
-  title={Deep Learning-Based Lung Nodule Classification with Explainable Feature Analysis},
-  year={2026},
-  pages={1-6},
-  doi={10.1109/ICICICT66501.2026.11539587}
+author={Yenugu, Chenna Kesava Reddy},
+booktitle={2026 International Conference on Intelligent Computing, IoT, and Communication Technologies (ICICICT)},
+title={Deep Learning-Based Lung Nodule Classification with Explainable Feature Analysis},
+year={2026},
+pages={1-6},
+doi={10.1109/ICICICT66501.2026.11539587}
 }
 ```
 
@@ -397,21 +385,14 @@ If you use this project in your research, please cite:
 
 # 🤝 Contributing
 
-Contributions are welcome.
+Pull Requests and Contributions are welcome.
 
 ```bash
-# Fork Repository
+git checkout -b feature/new-feature
 
-# Create Feature Branch
-git checkout -b feature/NewFeature
+git commit -m "Add feature"
 
-# Commit Changes
-git commit -m "Add New Feature"
-
-# Push Changes
-git push origin feature/NewFeature
-
-# Create Pull Request
+git push origin feature/new-feature
 ```
 
 ---
@@ -420,7 +401,7 @@ git push origin feature/NewFeature
 
 Distributed under the MIT License.
 
-See the LICENSE file for more information.
+See LICENSE for details.
 
 ---
 
@@ -428,15 +409,24 @@ See the LICENSE file for more information.
 
 **Yenugu Chenna Kesava Reddy**
 
-- GitHub: https://github.com/ychennakesavareddy
-- LinkedIn: https://www.linkedin.com/in/ychennakesavareddy
-- Hugging Face: https://huggingface.co/yenugu
-- Portfolio: https://chennareddy.in
-- Email: c.yenugu.tech@gmail.com
+GitHub:
+https://github.com/ychennakesavareddy
+
+LinkedIn:
+https://www.linkedin.com/in/ychennakesavareddy
+
+Hugging Face:
+https://huggingface.co/yenugu
+
+Portfolio:
+https://chennareddy.in
+
+Email:
+c.yenugu.tech@gmail.com
 
 ---
 
-# 🙏 Acknowledgments
+# 🙏 Acknowledgements
 
 - IEEE
 - IQ-OTHNCCD Dataset Authors
@@ -448,8 +438,8 @@ See the LICENSE file for more information.
 
 <div align="center">
 
-## ⭐ If you found this project useful, please give it a star ⭐
+## ⭐ Star this repository if you found it useful ⭐
 
-### Made with ❤️ for Lung Cancer Detection and Early Diagnosis
+Made with ❤️ for Lung Cancer Detection Research
 
 </div>
